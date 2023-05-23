@@ -1,0 +1,19 @@
+23.05.2023 15.42.18
+** unmount device... **
+umount sdb
+SHELL=/bin/bash
+SUDO_GID=33
+SUDO_COMMAND=/bin/bash -c /var/www/html/switchboot/doumounts.sh sdb 0 >>/var/www/html/switchboot/switchlog.log 2>&1 & 
+SUDO_USER=www-data
+PWD=/var/www/html/switchboot
+LOGNAME=root
+HOME=/root
+LANG=C
+TERM=unknown
+USER=root
+SHLVL=1
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+SUDO_UID=33
+MAIL=/var/mail/root
+_=/usr/bin/env
+::END::
