@@ -11,3 +11,31 @@ So wird das booten von sda oder sdb ermöglicht ohne die Karte zu entnehmen.
 ## Raspberry Pi 4B+ ##
 
 Hier haben die USB Geräte vorrang, das ändert aber nichts am Problem. Daher wird auch hier das obige verfahren angewendet um sicherzustellen welches Device zum  booten verwendet wird ohne die anderen Medien zu entfernen.
+
+## Sicherheit ##
+Wer mag kann mit einer **.htaccess** den Zugriff auf das Script neugierigen Blicken entziehen.
+```
+::::::::::::::
+.htaccess
+::::::::::::::
+AuthType Basic
+AuthUserFile /var/www/html/switchboot/.passwd
+AuthName "Switchboot"
+require valid-user
+
+<Files ".passwd">
+  Require all denied
+</Files>
+```
+```
+::::::::::::::
+.passwd
+::::::::::::::
+chefe:$apr1$cYgSwDWO$bbFsuvhG/IV.Zrak4IqOa.
+```
+Passwort wird nicht verraten...:-)
+
+
+
+
+
