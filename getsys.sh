@@ -1,21 +1,10 @@
 #!/bin/bash
-debv=$(</etc/debian_version)
+
+root=${1:-/}
+
+debv=$(<"${root}etc/debian_version")
 debx=${debv/\.[0-9]*/}
-unx=$(uname -nro)
+PRETTY_NAME=""
+source "${root}etc/os-release"
 
-case $debx in
-	9)
-	   debs='Sreatch'
-	   ;;
-       10)
-	  debs='Buster'
-	 ;;
-       11)
-	 debs='Bullseye'
-	 ;;
-	*)
-	  debs='Debian $debv';
-	 ;;
-esac
-
-echo "$unx $debs"	
+echo "$PRETTY_NAME"	

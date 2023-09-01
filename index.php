@@ -116,6 +116,18 @@
     }
    header('Location: '."");
  }
+ elseif( $do == "unboot" )
+ {
+   $name="";
+   if ( isset($_POST['name']) && $_POST['name']>'' )
+   { 
+     $name =  $_POST['name'];
+     $command = "sudo -n /bin/bash -c \"$pwd/unboot.sh $name $debug >>$logfile 2>&1 & \" ";
+     file_put_contents($logfile, $d."\n** Deaktiviere $name\n");
+     shell_exec($command);   
+    }
+   header('Location: '."");
+ }
  elseif( $do == "switchto" )
  {
    $name="";
@@ -211,16 +223,17 @@ elseif( $do == "init" )
   background-color: #f5f5f5;
   padding:5px;
   text-align:left;
-  font-size=0.4em;  
+  font-size:0.7em;  
 }
 
 .table {
   float: center;
-  padding: 10px;
+  padding: 5px;
+  font-size: 0.9em;  
 }
 th, caption {
   background-color: #f1f3f4;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 @media only screen and (max-width: 620px) {
@@ -234,9 +247,10 @@ th, caption {
 button {
     border-radius: 3px;
     border: 1px solid #0000B2;
-    padding:3px 10px 3px 10px;
+    padding:3px 7px 3px 7px;
     background: #F7F7F7;
-    font-size: 0.9em;
+    font-size: 0.8em;
+    font-weight: 600;
     cursor: pointer;
 }
 textarea {
@@ -290,16 +304,19 @@ details[open] {
    $res="<form style=\"display: inline;\" action = \"\" method = \"post\" "
         . $cf
         . $extra 
-        . "<button  name=\"$name\" value=\"$val\" >$text</button>"
+        . "<button  name=\"$name\" value=\"$val\" title=\"$confirm\">$text</button>"
         . "</form>";
     return $res;
  }
  
- function getsystem()
+ function getsystem($root)
  {
    global $debug;
+   if( empty($root) ) 
+      $root="/";
    $pwd= dirname($_SERVER['SCRIPT_FILENAME']); //  /var/www/html/switchboot/index.php
-   $command = escapeshellcmd("sudo /bin/bash $pwd/getsys.sh $debug 2>&1");
+   $command = escapeshellcmd("sudo /bin/bash -c \"$pwd/getsys.sh $root  $debug \" 2>&1");
+   debout( $command);
    $output = shell_exec($command);
    return $output;
  }
@@ -346,7 +363,7 @@ details[open] {
            if( count($o->children) == 2)
            {
             if ( empty($o->children[0]->mountpoint)  )
-                $o->but =makebutton('name',$o->name,' mount ',
+                $o->but =makebutton('name', $o->name,' mount ',
                                   "Device ".$o->name." mounten.", 
                                   "<input type=\"hidden\" name=\"do\" value=\"mount\">" ); 
             else 
@@ -367,25 +384,31 @@ details[open] {
                       else 
                         { 
                             $o->but =makebutton('name',$o->name,' umount ',
-                                  "Diese ".$o->name." unmounten.", 
+                                  'Device '.$o->name." unmounten.", 
                                   "<input type=\"hidden\" name=\"do\" value=\"umount\">" );
-                                  
-                            if( file_exists( $o->children[0]->mountpoint . "/bootcode.bin") )
-                               $o->aktive='bootable';
-                            else   
-                                $o->aktive='nicht bootbar';
-
                             $o->but2=makebutton('name',$o->name,' Copy OWB-Data ',
                                   "Daten der OWN auf zu ".$o->name." kopieren.", 
                                   "<input type=\"hidden\" name=\"do\" value=\"latchowb\">" );
+                                  
+                            if( file_exists( $o->children[0]->mountpoint . "/bootcode.bin") )
+                            {
+                               $o->aktive='bootable';
+                               $o->but3=makebutton('name',$o->name,' disable boot ',
+                                  "Disable boot ".$o->name, 
+                                  "<input type=\"hidden\" name=\"do\" value=\"unboot\">" );
+                            } else {   
+                                $o->aktive='nicht bootbar';
+
                             $o->but3=makebutton('name',$o->name,' Boot next time ',
                                   "Next boot from ".$o->name, 
                                   "<input type=\"hidden\" name=\"do\" value=\"switchto\">" );
                         }
+                        }
                     debout('mountpoint(0) '.$o->children[0]->mountpoint );               
                     debout('mountpoint(1) '.$o->children[1]->mountpoint );               
-                    $cmd="cat " . $o->children[1]->mountpoint . "/etc/debian_version";
-                    $o->version=shell_exec($cmd);                   
+                    //$cmd="cat " . $o->children[1]->mountpoint . "/etc/debian_version";
+                    //$o->version=shell_exec($cmd);
+                    $o->version = getsystem($o->children[1]->mountpoint."/");                   
                  }                    
            }
            
@@ -436,7 +459,7 @@ function getbootdevice()
               echo "<body style=\"font-family:Verdana;color:#102030;\" class=\"wait\">";
          else
              echo "<body style=\"font-family:Verdana;color:#102030;\" >";
-        $sys=getsystem();
+        $sys=getsystem('/');
         $bootdev=getbootdevice();
  ?>
         <div class="band">
@@ -449,7 +472,7 @@ function getbootdevice()
           <table style="width:100%;">
             <tr>
               <th>Device</th>
-              <th style="width:30%;">Mountpoints</th>
+              <th style="width:20%;">Mountpoints</th>
               <th>OS-Version</th>
               <th style="width:30%;">Aktion</th>
             </tr>
@@ -462,7 +485,7 @@ function getbootdevice()
                 $rows=scann($html);
                 foreach ($rows as $k => $d)
                 {
-                  printf("<tr><td><b>%s</b> %s %s<br>%s %s<br>UUID: %s</td>",  
+                  printf("<tr><td><b>%s</b> %s<br>%s<br>%s %s<br>UUID: %s</td>",  
                          $d->name,   $d->size, $d->serial,
                          $d->vendor, $d->model, $d->ptuuid
                          );
@@ -475,15 +498,16 @@ function getbootdevice()
                    }
                   else echo "<td> nicht gemounted</td>";
                   
-                  printf("<td>%s %s</td>",  
+                  printf("<td>%s<br>%s</td>",  
                          $d->version, 
                          $d->aktive
                         );
                    
-                  printf("<td style='text-align: center;'>%s&nbsp;%s&nbsp;%s</td></tr>\n",   
+                  printf("<td style='text-align: center;'>%s&nbsp;%s&nbsp;%s</td>",   
                           $d->but, 
                           $d->but2,
                           $d->but3);
+                  echo "</tr>\n";         
                 }    
              }
               
@@ -500,7 +524,7 @@ function getbootdevice()
             ?>
             <?php
               echo makebutton('do','refresh','Refresh','',''); 
-              echo "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+              echo "&nbsp;&nbsp;&nbsp;";
               echo makebutton('name','init','Module Init',
                                "Module neu initialisieren.\\nHierbei wird auch die Logdatei gelöschen.", 
                                '<input type="hidden" name="do" value="init">' ); 
@@ -510,10 +534,13 @@ function getbootdevice()
         </div>
          <div class="dbgband" style="margin-top:7px; text-aligne=left ">
          <?php
-           if( count($dbg)>2 ) echo "<details open >"; else echo "<details close >";     
+           if( count($dbg)>2 ) 
+            echo "<details open >"; 
+           else 
+            echo "<details close >";     
          ?>
           <summary> Meldungen... </summary>
-            <span style="font-size:0.7em;">
+           <span>
             <?php
                  foreach ($dbg as  $k=>$d)
                   if( $d > "")
