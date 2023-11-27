@@ -4,6 +4,12 @@ dev=$1
 echo "check mountpoints for $dev"
 sleep 1
 
+if [ "$dev" == "" ] ; then
+ echo "usage: $0 dev"
+ exit 1
+fi
+
+echo "mount $dev"
 if [ ! -d  /media/${dev}_boot ] ; then
   echo "create mountpoint /media/${dev}_boot "
   sudo mkdir /media/${dev}_boot
@@ -16,15 +22,17 @@ if [ ! -d  /media/${dev}_root ] ; then
 fi
 
 
-echo "mount $dev"
+d1="/dev/${dev}1" 
+d2="/dev/${dev}2"
 if [ "$dev" == "mmcblk0" ] ; then
-    mount  "/dev/${dev}p1" "/media/${dev}_boot" 
-    mount  "/dev/${dev}p2" "/media/${dev}_root"
-else
-    mount  "/dev/${dev}1" "/media/${dev}_boot"
-    mount  "/dev/${dev}2" "/media/${dev}_root"
+    d1="/dev/${dev}p1" 
+    d2="/dev/${dev}p2"
 fi 
+mount  $d1 "/media/${dev}_boot"
+mount  $d2 "/media/${dev}_root"
 
 
+mount |grep $dev
 
 echo "::END::"
+exit 0
