@@ -179,6 +179,7 @@ elseif( $do == "init" )
  { // nix tun, auch kein fressh starten
     $pwd= dirname($_SERVER['SCRIPT_FILENAME']); //  /var/www/html/switchboot/index.php
     $command = "sudo chown -R pi:pi $pwd ";
+    $command = "sudo chown -R openwb:openwb $pwd ";
     shell_exec($command);
     $command = "sudo /bin/bash -c \"rm $logfile \" ";
     shell_exec($command);
