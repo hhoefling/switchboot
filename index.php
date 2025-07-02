@@ -17,6 +17,9 @@
 #
 #     You should have received a copy of the GNU General Public License
 #     along with openWB.  If not, see <https://www.gnu.org/licenses/>.
+# in /etc/sudoers ist die folgende Zeile nötig
+#     www-data ALL=(ALL) NOPASSWD: /usr/bin/systemd-run
+
 #
 */
 
@@ -79,8 +82,11 @@
    if ( isset($_POST['name']) && $_POST['name']>'' )
     {
      $name =  $_POST['name'];
-     $command = "sudo -n /bin/bash -c \"$pwd/doumounts.sh $name $debug >>$logfile 2>&1 & \" ";
-     file_put_contents($logfile, $d."\n** unmount device... **\n");
+	 $command = "sudo -n systemd-run --wait --pty --unit='mounter' $pwd/doumounts.sh $name $debug >>$logfile 2>&1 &";
+     file_put_contents($logfile, $d." ** NOTE **\n");
+     file_put_contents($logfile, $d." ** in sudoers: www-data ALL=(ALL) NOPASSWD: /usr/bin/systemd-run **\n", FILE_APPEND);
+     file_put_contents($logfile, $d." ** unmount device... **\n",FILE_APPEND);
+     file_put_contents($logfile, $d." $command \n",FILE_APPEND);
      shell_exec($command);
      header('Location: '."");
     } 
@@ -91,9 +97,13 @@
    if ( isset($_POST['name']) && $_POST['name']>'' )
     {
      $name =  $_POST['name'];
-     $command = "sudo -n /bin/bash -c \"$pwd/domounts.sh $name $debug >>$logfile 2>&1 & \" ";
-     file_put_contents($logfile, $d."\n** Mount device... **\n");
+	 $command = "sudo -n systemd-run --wait --pty --unit='mounter' $pwd/domounts.sh $name $debug >>$logfile 2>&1 &";
+     file_put_contents($logfile, $d." ** NOTE **\n");
+     file_put_contents($logfile, $d." ** in sudoers: www-data ALL=(ALL) NOPASSWD: /usr/bin/systemd-run **\n",FILE_APPEND);
+     file_put_contents($logfile, $d." ** Mount device... **\n",FILE_APPEND);
+     file_put_contents($logfile, $d." $command \n",FILE_APPEND);
      shell_exec($command);
+     # exec($cmd);
     } 
     header('Location: '."");
  }
@@ -169,6 +179,7 @@ elseif( $do == "init" )
  { // nix tun, auch kein fressh starten
     $pwd= dirname($_SERVER['SCRIPT_FILENAME']); //  /var/www/html/switchboot/index.php
     $command = "sudo chown -R pi:pi $pwd ";
+    $command = "sudo chown -R openwb:openwb $pwd ";
     shell_exec($command);
     $command = "sudo /bin/bash -c \"rm $logfile \" ";
     shell_exec($command);
@@ -320,6 +331,17 @@ details[open] {
    $output = shell_exec($command);
    return $output;
  }
+ function getowbinfo($root)
+ {
+   global $debug;
+   if( empty($root) ) 
+      $root="/";
+   $pwd= dirname($_SERVER['SCRIPT_FILENAME']); //  /var/www/html/switchboot/index.php
+   $command = escapeshellcmd("sudo /bin/bash -c \"$pwd/getowb.sh $root  $debug \" 2>&1");
+   debout( $command);
+   $output = shell_exec($command);
+   return $output;
+ }
 
  $bds = array('sda','sdb','sdc','sdd','mmcblk0');
  
@@ -359,6 +381,7 @@ details[open] {
            $o->version='';                   
            $o->boot='';                   
            $o->aktive='';
+	   $o->owbinfo='';
 
            if( count($o->children) == 2)
            {
@@ -409,6 +432,7 @@ details[open] {
                     //$cmd="cat " . $o->children[1]->mountpoint . "/etc/debian_version";
                     //$o->version=shell_exec($cmd);
                     $o->version = getsystem($o->children[1]->mountpoint."/");                   
+                    $o->owbinfo = getowbinfo($o->children[1]->mountpoint."/");                   
                  }                    
            }
            
@@ -498,9 +522,10 @@ function getbootdevice()
                    }
                   else echo "<td> nicht gemounted</td>";
                   
-                  printf("<td>%s<br>%s</td>",  
+                  printf("<td>%s<br>%s<br>%s</td>",  
                          $d->version, 
-                         $d->aktive
+                         $d->aktive,
+			 $d->owbinfo
                         );
                    
                   printf("<td style='text-align: center;'>%s&nbsp;%s&nbsp;%s</td>",   
